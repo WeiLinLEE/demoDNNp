@@ -1,55 +1,27 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>PM2.5 預測模型</title>
-</head>
-<body>
-  <h1>PM2.5 預測</h1>
+<script>
+  let model;
 
-  <form id="predict-form">
-    <label>PM2.5: <input type="number" id="pm25" step="any" required></label><br>
-    <label>AQI: <input type="number" id="aqi" step="any" required></label><br>
-    <label>氣溫: <input type="number" id="temp" step="any" required></label><br>
-    <label>年齡層: 
-      <select id="age">
-        <option value="0">0–12</option>
-        <option value="1">13–64</option>
-        <option value="2">65+</option>
-      </select>
-    </label><br>
-    <button type="submit">預測</button>
-  </form>
+  async function loadModel() {
+    // ✅ Graph model 要用 tf.loadGraphModel()
+    model = await tf.loadGraphModel('tfjs_model/model.json');
+  }
 
-  <h2 id="result">預測結果：--</h2>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  loadModel();
 
-  <script>
-    let model;
+  document.getElementById('predict-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
 
-    async function loadModel() {
-      model = await tf.loadGraphModel('tfjs_model/model.json');  // 這裡是 graph model
-    }
-    loadModel();
+    const pm25 = parseFloat(document.getElementById('pm25').value);
+    const aqi = parseFloat(document.getElementById('aqi').value);
+    const temp = parseFloat(document.getElementById('temp').value);
+    const age = parseInt(document.getElementById('age').value);
 
-    document.getElementById('predict-form').addEventListener('submit', async function(e) {
-      e.preventDefault();
+    const inputTensor = tf.tensor2d([[pm25, aqi, temp, age]], [1, 4]);
 
-      // 取得使用者輸入的數值
-      const pm25 = parseFloat(document.getElementById('pm25').value);
-      const aqi = parseFloat(document.getElementById('aqi').value);
-      const temp = parseFloat(document.getElementById('temp').value);
-      const age = parseInt(document.getElementById('age').value);
+    // ✅ Graph model 的 predict 是傳入 dictionary（鍵為 input 名）
+    const prediction = model.predict({ "input_layer_6": inputTensor });
 
-      // 建立輸入張量 shape [1, 4]
-      const input = tf.tensor2d([[pm25, aqi, temp, age]], [1, 4]);
-
-      // Graph Model 的輸入是字典，鍵為 input 名稱
-      const output = model.predict({ "input_layer_6": input });
-
-      const result = await output.data();
-      document.getElementById('result').textContent = `預測結果：${result[0].toFixed(2)}`;
-    });
-  </script>
-</body>
-</html>
+    const result = await prediction.data();
+    document.getElementById('result').textContent = `預測結果：${result[0].toFixed(2)}`;
+  });
+</script>

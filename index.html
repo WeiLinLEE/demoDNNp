@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>PM2.5 預測模型</title>
-  
 </head>
 <body>
   <h1>PM2.5 預測</h1>
@@ -28,22 +27,25 @@
   <script>
     let model;
     async function loadModel() {
-      model = await tf.loadLayersModel('tfjs_model/model.json');
+      model = await tf.loadLayersModel('tfjs_model/model.json');  // 注意：模型路徑要正確
     }
     loadModel();
 
     document.getElementById('predict-form').addEventListener('submit', async function(e) {
       e.preventDefault();
 
+      // 取得使用者輸入的資料
       const pm25 = parseFloat(document.getElementById('pm25').value);
       const aqi = parseFloat(document.getElementById('aqi').value);
       const temp = parseFloat(document.getElementById('temp').value);
       const age = parseInt(document.getElementById('age').value);
 
+      // 組成 Tensor 並預測
       const inputTensor = tf.tensor2d([[pm25, aqi, temp, age]]);
       const prediction = model.predict(inputTensor);
       const result = await prediction.data();
 
+      // 顯示結果
       document.getElementById('result').textContent = `預測結果：${result[0].toFixed(2)}`;
     });
   </script>

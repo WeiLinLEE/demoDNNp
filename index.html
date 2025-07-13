@@ -1,46 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>就診人次預測</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
-</head>
-<body>
-  <h2>就診人次預測</h2>
-  <label>PM2.5濃度: <input type="number" id="pm25"></label><br>
-  <label>AQI指數: <input type="number" id="aqi"></label><br>
-  <label>氣溫: <input type="number" id="temp"></label><br>
-  <label>年齡層: <input type="number" id="age"></label><br>
-  <button onclick="predict()">預測</button>
-  <h3>預測結果：<span id="result"></span></h3>
+<script>
+  let model;
+  const mean = [36.44795455, 36.79043956, 21.94257032, 1.0];
+  const std = [13.82799287, 16.38531829, 4.86021746, 0.81649658];
 
-  <script>
-    let model;
-    const mean = [36.44795455, 36.79043956, 21.94257032, 1.0];
-    const std = [13.82799287, 16.38531829, 4.86021746, 0.81649658];
+  async function loadModel() {
+    model = await tf.loadGraphModel('./tfjs_model/model.json');
+    console.log('模型已載入');
+  }
 
-    async function loadModel() {
-      model = await tf.loadLayersModel('./tfjs_model/model.json');
-      console.log('模型已載入');
-    }
+  async function predict() {
+    const inputs = [
+      parseFloat(document.getElementById('pm25').value),
+      parseFloat(document.getElementById('aqi').value),
+      parseFloat(document.getElementById('temp').value),
+      parseFloat(document.getElementById('age').value),
+    ];
 
-    async function predict() {
-      const inputs = [
-        parseFloat(document.getElementById('pm25').value),
-        parseFloat(document.getElementById('aqi').value),
-        parseFloat(document.getElementById('temp').value),
-        parseFloat(document.getElementById('age').value),
-      ];
+    const standardized = inputs.map((val, i) => (val - mean[i]) / std[i]);
+    const inputTensor = tf.tensor2d([standardized]);
 
-      const standardized = inputs.map((val, i) => (val - mean[i]) / std[i]);
-      const tensorInput = tf.tensor2d([standardized]);
-      const output = model.predict(tensorInput);
-      const result = (await output.data())[0];
+    // 替換為你的模型實際輸入名稱
+    const output = model.predict({ "keras_tensor_43": inputTensor });
 
-      document.getElementById('result').innerText = result.toFixed(2);
-    }
+    const result = await output.data();
+    document.getElementById('result').innerText = result[0].toFixed(2);
+  }
 
-    loadModel();
-  </script>
-</body>
-</html>
+  loadModel();
+</script>

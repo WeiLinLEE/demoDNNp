@@ -1,30 +1,61 @@
-<script>
-  let model;
-  const mean = [36.44795455, 36.79043956, 21.94257032, 1.0];
-  const std = [13.82799287, 16.38531829, 4.86021746, 0.81649658];
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>就診人次預測</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+</head>
+<body>
+  <h2>就診人次預測</h2>
 
-  async function loadModel() {
-    model = await tf.loadGraphModel('./tfjs_model/model.json');
-    console.log('模型已載入');
-  }
+  <label>PM2.5濃度: <input type="number" id="pm25"></label><br>
+  <label>AQI指數: <input type="number" id="aqi"></label><br>
+  <label>氣溫: <input type="number" id="temp"></label><br>
+  <label>年齡層:
+    <select id="age">
+      <option value="0">0–12 歲</option>
+      <option value="1">13–64 歲</option>
+      <option value="2">65 歲以上</option>
+    </select>
+  </label><br>
 
-  async function predict() {
-    const inputs = [
-      parseFloat(document.getElementById('pm25').value),
-      parseFloat(document.getElementById('aqi').value),
-      parseFloat(document.getElementById('temp').value),
-      parseFloat(document.getElementById('age').value),
-    ];
+  <button onclick="predict()">預測</button>
 
-    const standardized = inputs.map((val, i) => (val - mean[i]) / std[i]);
-    const inputTensor = tf.tensor2d([standardized]);
+  <h3>預測結果：<span id="result">--</span></h3>
 
-    // 替換為你的模型實際輸入名稱
-    const output = model.predict({ "keras_tensor_43": inputTensor });
+  <script>
+    let model;
 
-    const result = await output.data();
-    document.getElementById('result').innerText = result[0].toFixed(2);
-  }
+    // 標準化用的 mean 與 std（根據你的模型訓練資料計算）
+    const mean = [36.44795455, 36.79043956, 21.94257032, 1.0];
+    const std = [13.82799287, 16.38531829, 4.86021746, 0.81649658];
 
-  loadModel();
-</script>
+    async function loadModel() {
+      model = await tf.loadGraphModel('./tfjs_model/model.json'); // ✅ 使用 Graph Model 載入方式
+      console.log("模型已載入成功");
+    }
+
+    async function predict() {
+      const pm25 = parseFloat(document.getElementById('pm25').value);
+      const aqi = parseFloat(document.getElementById('aqi').value);
+      const temp = parseFloat(document.getElementById('temp').value);
+      const age = parseInt(document.getElementById('age').value);
+
+      // 資料標準化
+      const inputs = [pm25, aqi, temp, age];
+      const standardized = inputs.map((val, i) => (val - mean[i]) / std[i]);
+
+      const inputTensor = tf.tensor2d([standardized]); // shape [1, 4]
+
+      // ✅ 注意：Graph Model 輸入需使用 dictionary 並指定名稱（來自 model.json）
+      const output = model.predict({ "keras_tensor_43": inputTensor });
+
+      const result = await output.data();
+      document.getElementById('result').innerText = result[0].toFixed(2);
+    }
+
+    // 載入模型
+    loadModel();
+  </script>
+</body>
+</html>

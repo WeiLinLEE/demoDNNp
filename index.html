@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>PM2.5 預測模型</title>
+  
+</head>
+<body>
+  <h1>PM2.5 預測</h1>
+
+  <form id="predict-form">
+    <label>PM2.5: <input type="number" id="pm25" step="any" required></label><br>
+    <label>AQI: <input type="number" id="aqi" step="any" required></label><br>
+    <label>氣溫: <input type="number" id="temp" step="any" required></label><br>
+    <label>年齡層: 
+      <select id="age">
+        <option value="0">0–12</option>
+        <option value="1">13–64</option>
+        <option value="2">65+</option>
+      </select>
+    </label><br>
+    <button type="submit">預測</button>
+  </form>
+
+  <h2 id="result">預測結果：--</h2>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+  <script>
+    let model;
+    async function loadModel() {
+      model = await tf.loadLayersModel('tfjs_model/model.json');
+    }
+    loadModel();
+
+    document.getElementById('predict-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const pm25 = parseFloat(document.getElementById('pm25').value);
+      const aqi = parseFloat(document.getElementById('aqi').value);
+      const temp = parseFloat(document.getElementById('temp').value);
+      const age = parseInt(document.getElementById('age').value);
+
+      const inputTensor = tf.tensor2d([[pm25, aqi, temp, age]]);
+      const prediction = model.predict(inputTensor);
+      const result = await prediction.data();
+
+      document.getElementById('result').textContent = `預測結果：${result[0].toFixed(2)}`;
+    });
+  </script>
+</body>
+</html>
